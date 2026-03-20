@@ -26,16 +26,28 @@ export async function fetchSession(
   if (!responsesRes.ok) {
     throw new Error(`Harmonica responses ${responsesRes.status}: ${await responsesRes.text()}`);
   }
-  const data: HarmonicaResponse = await responsesRes.json();
+  const responsesData = await responsesRes.json();
+  // API returns {data: [...]} or flat array
+  const rawParticipants: any[] = Array.isArray(responsesData)
+    ? responsesData
+    : responsesData.data || responsesData.participants || [];
+
+  // Normalize field names (API uses participant_name, types use display_name)
+  const participants: HarmonicaParticipant[] = rawParticipants.map((p: any) => ({
+    participant_id: p.participant_id,
+    display_name: p.display_name || p.participant_name || p.participant_id,
+    message_count: p.message_count || p.messages?.length || 0,
+    messages: p.messages || [],
+  }));
 
   const meta: SessionMeta = {
-    title: session.title || session.name || sessionId,
+    title: session.topic || session.title || session.name || sessionId,
     description: session.goal || session.description || "",
-    participant_count: data.participants.length,
+    participant_count: participants.length,
     created_at: session.created_at || new Date().toISOString(),
   };
 
-  return { meta, participants: data.participants };
+  return { meta, participants };
 }
 
 export function getParticipantText(participant: HarmonicaParticipant): string {

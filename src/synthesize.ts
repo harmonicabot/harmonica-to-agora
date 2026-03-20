@@ -128,8 +128,8 @@ export async function deduplicateStatements(
 
   if (flat.length === 0) return [];
 
-  // Batch if needed (for small-context models)
-  const BATCH_SIZE = 100;
+  // Batch if needed
+  const BATCH_SIZE = 50;
   if (flat.length <= BATCH_SIZE) {
     const raw = await callWithRetry(provider, makeDedupPrompt(flat), DEDUP_SYSTEM);
     return parseJSON<DedupedStatement[]>(raw);
@@ -137,11 +137,15 @@ export async function deduplicateStatements(
 
   // Multi-batch dedup
   let intermediate: DedupedStatement[] = [];
+  const totalBatches = Math.ceil(flat.length / BATCH_SIZE);
   for (let i = 0; i < flat.length; i += BATCH_SIZE) {
+    const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+    process.stdout.write(`  Batch ${batchNum}/${totalBatches}... `);
     const batch = flat.slice(i, i + BATCH_SIZE);
     const raw = await callWithRetry(provider, makeDedupPrompt(batch), DEDUP_SYSTEM);
     const deduped = parseJSON<DedupedStatement[]>(raw);
     intermediate.push(...deduped);
+    process.stdout.write(`${batch.length} → ${deduped.length}\n`);
   }
 
   // Build a lookup from statement text to full author_ids from intermediate results
@@ -151,14 +155,47 @@ export async function deduplicateStatements(
     authorMap.set(s.statement, [...new Set([...existing, ...s.author_ids])]);
   }
 
-  // Final cross-batch dedup (use first author_id for the prompt input)
+  // Final cross-batch dedup (may itself need batching)
+  let finalDeduped: DedupedStatement[];
   const crossInput = intermediate.map((s) => ({
     statement: s.statement,
     topic: s.topic,
     participant_id: s.author_ids[0],
   }));
-  const raw = await callWithRetry(provider, makeDedupPrompt(crossInput), DEDUP_SYSTEM);
-  const finalDeduped = parseJSON<DedupedStatement[]>(raw);
+
+  if (crossInput.length <= BATCH_SIZE) {
+    process.stdout.write(`  Cross-batch dedup (${crossInput.length} statements)... `);
+    const raw = await callWithRetry(provider, makeDedupPrompt(crossInput), DEDUP_SYSTEM);
+    finalDeduped = parseJSON<DedupedStatement[]>(raw);
+    process.stdout.write(`→ ${finalDeduped.length}\n`);
+  } else {
+    // Recursive batch the cross-batch dedup
+    let crossIntermediate: DedupedStatement[] = [];
+    const crossBatches = Math.ceil(crossInput.length / BATCH_SIZE);
+    for (let i = 0; i < crossInput.length; i += BATCH_SIZE) {
+      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+      process.stdout.write(`  Cross-batch ${batchNum}/${crossBatches}... `);
+      const batch = crossInput.slice(i, i + BATCH_SIZE);
+      const raw = await callWithRetry(provider, makeDedupPrompt(batch), DEDUP_SYSTEM);
+      const deduped = parseJSON<DedupedStatement[]>(raw);
+      crossIntermediate.push(...deduped);
+      process.stdout.write(`${batch.length} → ${deduped.length}\n`);
+    }
+    // One final pass if still large
+    if (crossIntermediate.length > BATCH_SIZE) {
+      process.stdout.write(`  Final merge (${crossIntermediate.length} statements)... `);
+      const finalInput = crossIntermediate.map((s) => ({
+        statement: s.statement,
+        topic: s.topic,
+        participant_id: s.author_ids[0],
+      }));
+      const raw = await callWithRetry(provider, makeDedupPrompt(finalInput), DEDUP_SYSTEM);
+      finalDeduped = parseJSON<DedupedStatement[]>(raw);
+      process.stdout.write(`→ ${finalDeduped.length}\n`);
+    } else {
+      finalDeduped = crossIntermediate;
+    }
+  }
 
   // Re-merge full author_ids from intermediate results
   for (const s of finalDeduped) {
