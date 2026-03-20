@@ -1,0 +1,14 @@
+{
+  "name": "harmonica-to-agora",
+  "version": "0.1.0",
+  "description": "Bridge Harmonica session responses to Agora/Polis-format CSVs for opinion clustering",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "synth": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "tsx": "^4.19.0"
+  }
+}
