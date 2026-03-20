@@ -39,12 +39,24 @@ ${JSON.stringify(statements, null, 2)}
 Return ONLY the directly relevant statements as a JSON array (keep original fields).`;
 }
 
-const DEDUP_SYSTEM = `You are deduplicating opinion statements. Rules:
+const DEDUP_SYSTEM = `You are deduplicating and polishing opinion statements for a Polis/Agora deliberation. Rules:
+
+DEDUPLICATION:
 - Merge statements that say the SAME thing in different words
 - Keep DISTINCT claims separate — do NOT over-merge
 - Preserve specificity — "RPGF only rewards proven impact" and "grant evaluation lacks accountability" are DIFFERENT
-- Each statement should be a clear, specific, votable claim
+
+QUALITY (apply to every output statement):
+- ONE specific idea per statement — split "A and B" into separate statements
+- Easy to agree/disagree — no vague or multi-part claims
+- Brief — aim for 280 characters or less
+- Clear — others should immediately understand the point
+- Translate non-English statements to English
+- No jargon unless widely understood in the governance community
 - Assign sequential IDs starting at 1
+
+BAD: "communities treat the treasury like a grant program, but it's effectively inflation-funded procurement—and without benchmarks, it drifts into rent extraction"
+GOOD: "DAO treasury spending is effectively inflation-funded procurement without benchmarks"
 
 Respond ONLY with a JSON array. No markdown, no explanation.`;
 
