@@ -56,9 +56,11 @@ export function writeCSVs(
     [commentsHeader, ...commentsRows].join("\n") + "\n"
   );
 
-  // Votes CSV (headers only)
+  // Votes CSV (one seed vote — Agora requires at least one data row)
+  const voteTs = baseTimestamp;
+  const voteDt = new Date(voteTs * 1000).toISOString();
   writeFileSync(
     join(outputDir, "votes.csv"),
-    "timestamp,datetime,comment-id,voter-id,vote,important\n"
+    `timestamp,datetime,comment-id,voter-id,vote,important\n${voteTs},${voteDt},1,1,1,0\n`
   );
 }
