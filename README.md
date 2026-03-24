@@ -7,7 +7,8 @@ Harmonica captures rich qualitative data through AI-facilitated 1:1 interviews. 
 ## Quick Start
 
 ```bash
-cd harmonica-integrations/agora
+git clone https://github.com/harmonicabot/harmonica-to-agora.git
+cd harmonica-to-agora
 npm install
 
 # Set API keys
@@ -19,6 +20,8 @@ npx tsx src/index.ts --session hst_your_session_id
 ```
 
 Output: three CSV files in `./output/` — upload them to Agora's CSV import.
+
+**Live example:** [gov/acc Phase 1 on Agora](https://www.agoracitizen.app/conversation/qF9yQ48) — 106 statements synthesized from 50+ governance practitioner interviews.
 
 ## LLM Providers
 
@@ -50,6 +53,16 @@ Output: three CSV files in `./output/` — upload them to Agora's CSV import.
 4. **Export** — outputs three Polis-format CSVs (summary, comments, votes)
 
 The tool caches per-participant results so you can resume interrupted runs or iterate on the deduplication step without re-processing all participants.
+
+## Topic Filtering
+
+Create focused subsets from cached extractions for specific workshops or themes:
+
+```bash
+npx tsx src/filter.ts --topic "Grant System Dysfunction" --output ./output-workshop
+```
+
+This reads the cached per-participant statements (from a previous full run) and filters them to a specific topic, then deduplicates and exports as CSVs.
 
 ## Output Format
 
