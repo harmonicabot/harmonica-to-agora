@@ -21,7 +21,9 @@ npx tsx src/index.ts --session hst_your_session_id
 
 Output: three CSV files in `./output/` — upload them to Agora's CSV import.
 
-**Live example:** [gov/acc Phase 1 on Agora](https://www.agoracitizen.app/conversation/qF9yQ48) — 106 statements synthesized from 50+ governance practitioner interviews.
+**Live examples** from the [gov/acc research program](https://gov-acc.metagov.org) (50+ governance practitioner interviews):
+- [Full session (106 statements)](https://www.agoracitizen.app/conversation/qF9yQ48) — extracted and deduped by Llama 4 Scout via OpenRouter
+- [Focused: Capital Allocation (32 statements)](https://www.agoracitizen.app/conversation/zdzQS5w) — curated by Claude Opus 4.6, filtered to a single workshop topic
 
 ## LLM Providers
 
